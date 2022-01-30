@@ -5,6 +5,8 @@ import { Activity, StateMachine } from 'aws-cdk-lib/aws-stepfunctions'
 import { StepFunctionsInvokeActivity } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Rule, Schedule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction as LambdaFunctionTarget } from 'aws-cdk-lib/aws-events-targets'; 
+import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
 export class AwsStepFunctionsActivityStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -32,7 +34,15 @@ export class AwsStepFunctionsActivityStack extends Stack {
         ACTIVITY_ARN: activity.activityArn,
       },
       functionName: `example-activity-worker`,
+      logRetention: RetentionDays.FIVE_DAYS,
     });
+
+    activityWorker.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['states:GetActivityTask', 'states:SendTask*'],
+        resources: [activity.activityArn],
+      })
+    );
 
     new Rule(this, 'ActivitySchedule', {
       schedule: Schedule.cron({ minute: '0/5' }),
