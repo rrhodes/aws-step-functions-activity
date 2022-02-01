@@ -13,38 +13,40 @@ export const handler = async (_event: ScheduledHandler) => {
     throw Error('Activity ARN from environment variables is undefined')
   }
 
-  LOG.debug('Polling for activity task');
   const activityTask = await STEP_FUNCTIONS_CLIENT.getActivityTask({
     activityArn: ACTIVITY_ARN,
     workerName: 'example-activity-worker',
   }).promise();
-  LOG.info("Polled for activity task");
 
   if (!activityTask.taskToken) {
     LOG.info('No tasks to process');
     return;
   }
 
+  // randomly decide whether to be successful or not
   const isTaskSuccessful = Math.random() < 0.5;
 
-  LOG.debug(`Task successful: ${isTaskSuccessful}`);
-  const taskOutput = {
-    output: activityTask.input as string,
-    taskToken: activityTask.taskToken as string,
-  };
+  let response: PromiseResult<unknown, AWSError>;
+  let taskOutput;
 
-  LOG.debug(`Sending task outcome to Step Functions`);
-  let response;
   if (isTaskSuccessful) {
+    taskOutput = {
+      output: activityTask.input as string,
+      taskToken: activityTask.taskToken as string,
+    };
     response = await STEP_FUNCTIONS_CLIENT.sendTaskSuccess(taskOutput).promise();
   } else {
+    taskOutput = {
+      cause: 'Flipping a coin. Unlucky this time.',
+      error: 'Bad luck! Try again.',
+      taskToken: activityTask.taskToken as string,
+    };
     response = await STEP_FUNCTIONS_CLIENT.sendTaskFailure(taskOutput).promise();
   }
 
   let error: AWSError | void;
   if (error = response.$response.error) {
-    LOG.error(`Failed to send task outcome to Step Functions: ${error.message}`);
-    return;
+    throw new Error(`Failed to send task outcome to Step Functions: ${error.message}`);
   };
 
   LOG.info(

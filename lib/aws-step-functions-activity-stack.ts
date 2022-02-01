@@ -20,7 +20,7 @@ export class AwsStepFunctionsActivityStack extends Stack {
       activity,
     });
 
-    const stateMachineName: string = 'example-state-machine';
+    const stateMachineName = 'example-state-machine';
 
     new StateMachine(this, 'StateMachine', {
       definition: activityTask,
