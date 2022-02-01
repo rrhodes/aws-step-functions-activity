@@ -1,4 +1,4 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Activity, StateMachine } from 'aws-cdk-lib/aws-stepfunctions'
@@ -35,6 +35,7 @@ export class AwsStepFunctionsActivityStack extends Stack {
       },
       functionName: `example-activity-worker`,
       logRetention: RetentionDays.FIVE_DAYS,
+      timeout: Duration.minutes(2),
     });
 
     activityWorker.addToRolePolicy(
